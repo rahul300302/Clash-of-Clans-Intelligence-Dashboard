@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+:root { color-scheme: dark; --app-bg: #09090b; --panel: #18181b; --panel-2: #111113; --border: #27272a; --text: #f5f5f5; --muted: #a1a1aa; }
+html[data-theme="light"] { color-scheme: light; --app-bg: #f4f4f5; --panel: #ffffff; --panel-2: #fafafa; --border: #e4e4e7; --text: #18181b; --muted: #52525b; }
+html, body { min-height: 100%; }
+body { background: var(--app-bg); color: var(--text); background-image: radial-gradient(circle at 85% 10%, rgba(220,38,38,.12), transparent 24rem), linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px); background-size: auto, 48px 48px, 48px 48px; }
+html[data-theme="light"] body { background-image: radial-gradient(circle at 85% 10%, rgba(220,38,38,.10), transparent 24rem); }
+.bg-slate-950 { background-color: var(--app-bg) !important; }
+.bg-slate-900 { background-color: var(--panel) !important; }
+.bg-slate-950\/90 { background-color: color-mix(in srgb, var(--app-bg) 90%, transparent) !important; }
+.border-slate-800, .border-slate-700 { border-color: var(--border) !important; }
+.text-slate-100, .text-slate-300 { color: var(--text) !important; }
+.text-slate-400, .text-slate-500 { color: var(--muted) !important; }
+.divide-slate-800 > :not(:last-child) { border-color: var(--border) !important; }
+@media (max-width: 1023px) { main { padding: 1.25rem !important; } }
+
+@keyframes clanverse-enter { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes clanverse-pulse { 0%,100% { box-shadow: 0 0 0 rgba(220,38,38,0); } 50% { box-shadow: 0 0 28px rgba(220,38,38,.18); } }
+@keyframes clanverse-glow { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.18); } }
+@keyframes clanverse-bar { from { transform: scaleY(.2); transform-origin: bottom; } to { transform: scaleY(1); transform-origin: bottom; } }
+.clanverse-enter { animation: clanverse-enter .55s cubic-bezier(.2,.8,.2,1) both; }
+.clanverse-card { transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease, background .22s ease; }
+.clanverse-card:hover { transform: translateY(-5px) scale(1.01); border-color: rgba(248,113,113,.55) !important; box-shadow: 0 18px 45px rgba(0,0,0,.28); }
+.clanverse-pulse { animation: clanverse-pulse 2.8s ease-in-out infinite; }
+.clanverse-glow { animation: clanverse-glow 2.4s ease-in-out infinite; }
+.clanverse-bar { animation: clanverse-bar .75s cubic-bezier(.2,.8,.2,1) both; }
