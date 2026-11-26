@@ -1,18 +1,6 @@
+
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "src/app/api/notifications/check/route.js": {
-      "maxDuration": 60,
-      "experimentalTriggers": [
-        { "type": "schedule/v1beta" }
-      ]
-    }
-  },
-  "schedules": {
-    "player-email-notifications": {
-      "schedule": "*/15 * * * *",
-      "function": "api/notifications/check",
-      "timezone": "UTC"
-    }
-  }
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install"
 }

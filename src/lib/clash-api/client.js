@@ -6,16 +6,26 @@ export async function cocFetch(path, options = {}) {
   const token = process.env.COC_API_TOKEN
   if (!token) throw new Error('COC_API_TOKEN is not configured')
 
-  const response = await fetch(`${baseUrl}${path}`, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/json',
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-      ...options.headers,
-    },
-    next: { revalidate: options.revalidate ?? 300 },
-  })
+  const { timeoutMs = 12000, revalidate = 300, ...requestOptions } = options
+  let response
+  try {
+    response = await fetch(`${baseUrl}${path}`, {
+      ...requestOptions,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        ...(requestOptions.body ? { 'Content-Type': 'application/json' } : {}),
+        ...requestOptions.headers,
+      },
+      signal: requestOptions.signal || AbortSignal.timeout(timeoutMs),
+      next: { revalidate },
+    })
+  } catch (error) {
+    if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+      throw new Error('The Clash of Clans API took too long to respond. Please try again.')
+    }
+    throw error
+  }
 
   if (!response.ok) {
     const body = await response.text()

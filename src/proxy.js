@@ -10,12 +10,14 @@ export async function proxy(request) {
   const playerTag = readPlayerSession(request.cookies.get(PLAYER_SESSION_COOKIE)?.value)
   const isAuthPage = path === '/login' || path === '/register'
 
+  if (!isAuthPage) return response
+  if (playerTag) {
+    const dashboardUrl = request.nextUrl.clone()
+    dashboardUrl.pathname = '/dashboard'
+    return NextResponse.redirect(dashboardUrl)
+  }
+
   if (!url || !key) {
-    if (playerTag && isAuthPage) {
-      const dashboardUrl = request.nextUrl.clone()
-      dashboardUrl.pathname = '/dashboard'
-      return NextResponse.redirect(dashboardUrl)
-    }
     return response
   }
 
@@ -33,7 +35,7 @@ export async function proxy(request) {
     user = data.user
   } catch {
   }
-  if ((user || playerTag) && isAuthPage) {
+  if (user) {
     const dashboardUrl = request.nextUrl.clone()
     dashboardUrl.pathname = '/dashboard'
     return NextResponse.redirect(dashboardUrl)

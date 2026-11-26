@@ -13,8 +13,11 @@ async function ClanDetailsContent({ params }) {
   let members = { items: [] }
   let war = null
   try {
-    clan = await getClan(clanTag)
-    ;[members, war] = await Promise.all([getClanMembers(clanTag), getCurrentWar(clanTag).catch(() => null)])
+    [clan, members, war] = await Promise.all([
+      getClan(clanTag),
+      getClanMembers(clanTag),
+      getCurrentWar(clanTag).catch(() => null),
+    ])
   } catch (error) {
     return <main><h1 className="text-3xl font-bold">Clan details unavailable</h1><p className="mt-4 text-red-300">{error.message}</p></main>
   }

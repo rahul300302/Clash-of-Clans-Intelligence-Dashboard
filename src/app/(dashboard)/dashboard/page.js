@@ -37,13 +37,11 @@ export default function Dashboard() {
     async function loadHome() {
       setLoading(true)
       try {
-        const sessionResponse = await fetch('/api/player-session')
+        const sessionResponse = await fetch('/api/player-session?includePlayer=1')
         const session = await sessionResponse.json()
         if (session.playerTag) {
-          const response = await fetch(`/api/players/${encodeURIComponent(session.playerTag)}`)
-          const player = await response.json()
-          if (!response.ok) throw new Error(player.error || 'Unable to load your player profile')
-          if (!cancelled) setSelected({ type: 'player', data: player })
+          if (!sessionResponse.ok) throw new Error(session.error || 'Unable to load your player profile')
+          if (!cancelled) setSelected({ type: 'player', data: session.player })
         } else {
           if (!cancelled) setMode('global')
           await loadGlobal()
@@ -205,12 +203,23 @@ function ClanDashboard({ clan, members, memberChart, memberMax }) {
           <div className="mt-4 max-h-[440px] space-y-2 overflow-y-auto pr-1">
             {filteredMembers.length ? filteredMembers.map((member) => {
               const level = member.townhallLevel || member.townHallLevel
+              const roleKey = String(member.role || 'member').toLowerCase().replace(/[\s_-]/g, '')
+              const role = {
+                leader: { label: 'Leader', style: 'border-amber-400/30 bg-amber-400/10 text-amber-300', icon: Crown },
+                coleader: { label: 'Co-leader', style: 'border-violet-400/30 bg-violet-400/10 text-violet-300', icon: Shield },
+                admin: { label: 'Elder', style: 'border-cyan-400/30 bg-cyan-400/10 text-cyan-300', icon: Shield },
+                elder: { label: 'Elder', style: 'border-cyan-400/30 bg-cyan-400/10 text-cyan-300', icon: Shield },
+                member: { label: 'Member', style: 'border-slate-700 bg-slate-900 text-slate-300', icon: Users },
+                new: { label: 'New', style: 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300', icon: Users },
+              }[roleKey] || { label: member.role || 'Member', style: 'border-slate-700 bg-slate-900 text-slate-300', icon: Users }
+              const RoleIcon = role.icon
               return (
                 <Link href={`/players/${encodeURIComponent(member.tag)}`} key={member.tag} className="clanverse-card flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950 p-3 hover:border-red-500">
                   <div className="flex min-w-0 items-center gap-3">
                     <TownHallBadge level={level} size={42} showLabel={false} />
                     <div className="min-w-0">
                       <p className="truncate font-bold">{member.name}</p>
+                      <span className={`mt-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${role.style}`}><RoleIcon size={11}/>{role.label}</span>
                       <p className="text-xs text-slate-500">TH {level} · {member.tag}</p>
                     </div>
                   </div>
