@@ -1,27 +1,25 @@
-import { timingSafeEqual } from 'node:crypto'
+import { handleSchedule } from '@vercel/schedules'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPlayer } from '@/lib/clash-api/player.service'
 import { getCurrentWar, getCapitalRaids } from '@/lib/clash-api/clan.service'
 import { sendNotificationEmail } from '@/lib/notifications/sendgrid'
 
-function hasValidCronSecret(request) {
-  const secret = process.env.NOTIFICATION_CRON_SECRET || process.env.CRON_SECRET
-  const supplied = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') || ''
-  if (!secret) return false
-  const a = Buffer.from(supplied)
-  const b = Buffer.from(secret)
-  return a.length === b.length && timingSafeEqual(a, b)
-}
-
-export async function GET(request) {
-  if (!hasValidCronSecret(request)) return Response.json({ error: 'Unauthorized' }, { status: 401 })
-
+async function checkNotifications(executionId) {
   const admin = createAdminClient()
+  const { error: claimError } = await admin.from('notification_schedule_runs').insert({
+    execution_id: executionId,
+    status: 'running',
+  })
+
+  if (claimError?.code === '23505') return { duplicate: true, checked: 0, sent: 0 }
+  if (claimError) throw claimError
+
+  try {
   const { data: entries, error } = await admin.from('player_notification_settings')
     .select('*')
     .not('email', 'is', null)
     .or('war_alerts.eq.true,capital_alerts.eq.true')
-  if (error) return Response.json({ error: error.message }, { status: 503 })
+  if (error) throw error
 
   let sent = 0
   const failures = []
@@ -38,7 +36,7 @@ export async function GET(request) {
         const state = String(war.state || 'unknown')
         if (entry.last_war_state == null) updates.last_war_state = state
         else if (entry.last_war_state !== state) {
-          messages.push(`War update for ${player.clan.name}: the war status changed from ${entry.last_war_state} to ${state}.`)
+          messages.push(`War status changed from ${entry.last_war_state} to ${state} for ${player.clan.name}.`)
           updates.last_war_state = state
         }
       }
@@ -55,7 +53,11 @@ export async function GET(request) {
       }
 
       if (messages.length) {
-        await sendNotificationEmail({ to: entry.email, subject: `CLANVERSE alert: ${player.clan.name}`, text: `Hi ${entry.player_name || player.name},\n\n${messages.join('\n\n')}\n\nPlayer: ${player.name} (${entry.player_tag})` })
+        await sendNotificationEmail({
+          to: entry.email,
+          subject: `CLANVERSE alert: ${player.clan.name}`,
+          text: `Hi ${entry.player_name || player.name},\n\n${messages.join('\n\n')}\n\nPlayer: ${player.name} (${entry.player_tag})`,
+        })
         sent += 1
       }
       if (Object.keys(updates).length) {
@@ -67,5 +69,27 @@ export async function GET(request) {
       failures.push({ playerTag: entry.player_tag, error: itemError.message })
     }
   }
-  return Response.json({ checked: entries?.length || 0, sent, failures })
+
+  const runUpdate = await admin.from('notification_schedule_runs').update({
+    status: failures.length ? 'failed' : 'completed',
+    checked_count: entries?.length || 0,
+    sent_count: sent,
+    failure_count: failures.length,
+    finished_at: new Date().toISOString(),
+  }).eq('execution_id', executionId)
+  if (runUpdate.error) throw runUpdate.error
+  if (failures.length) throw new Error(`Notification schedule ${executionId} had ${failures.length} player failure(s).`)
+  return { duplicate: false, checked: entries?.length || 0, sent }
+  } catch (error) {
+    await admin.from('notification_schedule_runs').update({
+      status: 'failed',
+      finished_at: new Date().toISOString(),
+    }).eq('execution_id', executionId)
+    throw error
+  }
 }
+
+export const POST = handleSchedule(async (metadata) => {
+  const result = await checkNotifications(metadata.executionId)
+  console.info('Notification schedule finished', { ...result, name: metadata.name, executionId: metadata.executionId, scheduledAt: metadata.scheduledAt.toISOString() })
+})

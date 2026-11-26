@@ -15,3 +15,16 @@ create table if not exists public.player_notification_settings (
 
 alter table public.player_notification_settings enable row level security;
 revoke all on public.player_notification_settings from anon, authenticated;
+
+create table if not exists public.notification_schedule_runs (
+  execution_id text primary key,
+  status text not null default 'running' check (status in ('running', 'completed', 'failed')),
+  checked_count integer not null default 0,
+  sent_count integer not null default 0,
+  failure_count integer not null default 0,
+  started_at timestamptz not null default now(),
+  finished_at timestamptz
+);
+
+alter table public.notification_schedule_runs enable row level security;
+revoke all on public.notification_schedule_runs from anon, authenticated;

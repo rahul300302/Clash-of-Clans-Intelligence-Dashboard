@@ -26,7 +26,7 @@ async function PlayerContent({ params }) {
   }
 }
 
-function Stat({ icon: Icon, label, value }) { return <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5"><Icon className="text-red-400" size={20}/><p className="mt-3 text-sm text-slate-400">{label}</p><p className="mt-1 text-2xl font-bold">{value ?? '—'}</p></div> }
+function Stat({ icon: Icon, label, value }) { return <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5"><Icon className="text-red-400" size={20}/><p className="mt-3 text-sm text-slate-400">{label}</p><div className="mt-1 text-2xl font-bold">{value ?? '—'}</div></div> }
 function Metric({ label, value }) { return <div className="rounded-xl bg-slate-950 p-4"><p className="text-xs text-slate-500">{label}</p><p className="mt-2 text-2xl font-bold text-red-400">{value?.toLocaleString() ?? '—'}</p></div> }
 
 export default function PlayerDetails({ params }) { return <Suspense fallback={<div className="rounded-2xl border border-slate-800 bg-slate-900 p-8">Loading player…</div>}><PlayerContent params={params}/></Suspense> }

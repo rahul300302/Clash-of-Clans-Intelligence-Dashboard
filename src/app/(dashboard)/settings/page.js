@@ -30,6 +30,9 @@ export default function Settings() {
         setEmail(data.email || '')
         setWarAlerts(data.warAlerts)
         setCapitalAlerts(data.capitalAlerts)
+        if (data.migrationRequired) {
+          setMessage('Your player profile loaded. Apply supabase/migrations/202611260001_add_player_email_notifications.sql in the Supabase SQL Editor to save email alerts.')
+        }
         return
       }
 
@@ -123,7 +126,7 @@ export default function Settings() {
           <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
             <h2 className="flex items-center gap-2 font-bold"><Bell size={18} className="text-red-400"/>Email alerts</h2>
             <div className="mt-5 space-y-4"><Toggle label="War alerts" checked={warAlerts} onChange={setWarAlerts}/><Toggle label="Clan Capital alerts" checked={capitalAlerts} onChange={setCapitalAlerts}/></div>
-            <p className="mt-4 text-xs text-slate-500">War status changes and new Clan Capital raid seasons are checked every 15 minutes.</p>
+            <p className="mt-4 text-xs text-slate-500">War and new Clan Capital raid alerts are scheduled to be checked every 15 minutes.</p>
           </section>
         </div>
       )}

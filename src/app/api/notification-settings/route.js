@@ -9,15 +9,27 @@ async function getPlayerTag() {
   return readPlayerSession(cookieStore.get(PLAYER_SESSION_COOKIE)?.value)
 }
 
+function isMissingSettingsTable(error) {
+  return error?.code === '42P01' || error?.code === 'PGRST205'
+}
+
 export async function GET() {
   const playerTag = await getPlayerTag()
   if (!playerTag) return Response.json({ error: 'Sign in with your player account to manage email notifications.' }, { status: 401 })
 
   try {
-    const [player, result] = await Promise.all([
-      getPlayer(playerTag),
-      createAdminClient().from('player_notification_settings').select('email, player_name, war_alerts, capital_alerts').eq('player_tag', playerTag).maybeSingle(),
-    ])
+    const player = await getPlayer(playerTag)
+    const result = await createAdminClient().from('player_notification_settings').select('email, player_name, war_alerts, capital_alerts').eq('player_tag', playerTag).maybeSingle()
+    if (isMissingSettingsTable(result.error)) {
+      return Response.json({
+        playerTag,
+        playerName: player.name,
+        email: '',
+        warAlerts: false,
+        capitalAlerts: false,
+        migrationRequired: true,
+      })
+    }
     if (result.error) throw result.error
     return Response.json({
       playerTag,
@@ -25,6 +37,7 @@ export async function GET() {
       email: result.data?.email || '',
       warAlerts: result.data?.war_alerts ?? false,
       capitalAlerts: result.data?.capital_alerts ?? false,
+      migrationRequired: false,
     })
   } catch (error) {
     return Response.json({ error: error.message || 'Unable to load notification settings.' }, { status: 503 })
@@ -61,6 +74,9 @@ export async function PUT(request) {
     if (error) throw error
     return Response.json({ success: true, playerName: player.name })
   } catch (error) {
+    if (isMissingSettingsTable(error)) {
+      return Response.json({ error: 'Your player profile loaded, but notification storage is not installed. Apply supabase/migrations/202611260001_add_player_email_notifications.sql in the Supabase SQL Editor, then try again.' }, { status: 503 })
+    }
     return Response.json({ error: error.message || 'Unable to save notification settings.' }, { status: 503 })
   }
 }
